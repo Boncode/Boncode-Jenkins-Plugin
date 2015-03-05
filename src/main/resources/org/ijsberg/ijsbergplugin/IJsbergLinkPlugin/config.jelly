@@ -1,0 +1,17 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This jelly script is used for per-project configuration.
+
+    See global.jelly for a general discussion about jelly script.
+  -->
+
+  <!--
+  plugin constructor parameters
+  -->
+  <f:entry title="Project analysis properties" field="analysisProperties" description="File name of analysis properties for current project, located in Monitor Server configuration">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Monitor upload directory" field="monitorUploadDirectory" description="Path to upload directory of monitor server">
+    <f:textbox />
+  </f:entry>
+</j:jelly>
