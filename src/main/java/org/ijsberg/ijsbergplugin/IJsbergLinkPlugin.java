@@ -10,15 +10,20 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
+import nl.ijsberg.analysis.domain.AnalysisJobRecord;
 import org.ijsberg.iglu.logging.Level;
 import org.ijsberg.iglu.logging.LogEntry;
 import org.ijsberg.iglu.util.collection.ArraySupport;
+import org.ijsberg.iglu.util.http.HttpIoSupport;
 import org.ijsberg.iglu.util.io.FSFileCollection;
 import org.ijsberg.iglu.util.io.FileFilterRuleSet;
 import org.ijsberg.iglu.util.io.FileSupport;
 import org.ijsberg.iglu.util.io.ZipFileStreamProvider;
 import org.ijsberg.iglu.util.misc.StringSupport;
 import org.ijsberg.iglu.util.properties.PropertiesSupport;
+import org.ijsberg.iglu.util.xml.Document;
+import org.ijsberg.iglu.util.xml.Node;
+import org.ijsberg.iglu.util.xml.ParseException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -45,7 +50,6 @@ import java.util.Properties;
  * When a build is performed, the {@link #perform(AbstractBuild, Launcher, BuildListener)}
  * method will be invoked. 
  *
- * @author Kohsuke Kawaguchi
  */
 public class IJsbergLinkPlugin extends Builder {
 
@@ -54,29 +58,33 @@ public class IJsbergLinkPlugin extends Builder {
 	private final String monitorUploadDirectory;
 
 
-	private final String analysisProperties;
-	private final Properties properties = new Properties();
+	private String analysisProperties;
+	private Properties properties = new Properties();
 
 	public static final String SNAPSHOT_TIMESTAMP_FORMAT = "yyyyMMdd_HH_mm";
+
+	private String monitorUrl = "http://localhost:17680";
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 
 	@DataBoundConstructor
     public IJsbergLinkPlugin(String analysisProperties, String monitorUploadDirectory) throws IOException {
-
+		//TODO add monitor url
 		this.monitorUploadDirectory = monitorUploadDirectory;
         this.analysisProperties = analysisProperties;
-		loadProperties(analysisProperties);
+		properties = loadProperties(analysisProperties);
     }
 
-	private void loadProperties(String analysisProperties) throws IOException {
+	private Properties loadProperties(String analysisProperties) throws IOException {
 		InputStream inputStream = new FileInputStream(new File(analysisProperties));
+		Properties properties = new Properties();
 		properties.load(inputStream);
 		this.projectId = properties.getProperty("projectName");
 		this.customerId = properties.getProperty("customerName");
 		System.out.println(new LogEntry(Level.VERBOSE, "loaded properties for customer "
 				+ this.customerId + ", project " + this.projectId));
 		inputStream.close();
+		return properties;
 	}
 
 	/**
@@ -100,40 +108,110 @@ public class IJsbergLinkPlugin extends Builder {
 
 	@Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        // This is where you 'build' the project.
-        // This also shows how you can consult the global configuration of the builder
-		// reload properties on-the-fly
 		try {
-			loadProperties(analysisProperties);
-		} catch (IOException e) {
-			listener.getLogger().println(new LogEntry("ERROR: unable to reload properties " + analysisProperties, e));
-			return false;
-		}
+			// This is where you 'build' the project.
+			// This also shows how you can consult the global configuration of the builder
+			// reload properties on-the-fly
+			try {
+				properties = loadProperties(analysisProperties);
+			} catch (IOException e) {
+				listener.getLogger().println(new LogEntry("ERROR: unable to reload properties " + analysisProperties, e));
+				return false;
+			}
 
-		String uploadDir = getCurrentUploadDir(listener);
-		File uploadDirectory = new File(uploadDir);
-		if(!uploadDirectory.exists()) {
-			listener.getLogger().println("ERROR: upload directory " + uploadDirectory.getAbsolutePath() + " does not exist or is not accessible");
-			return false;
-		}
-		if(!uploadDirectory.isDirectory()) {
-			listener.getLogger().println("ERROR: " + uploadDirectory.getAbsolutePath() + " is not a directory");
-			return false;
-		}
-		String workSpacePath = build.getWorkspace().getRemote();
-		listener.getLogger().println("zipping sources from " + workSpacePath + " to " + uploadDirectory.getAbsolutePath());
+			String uploadDir = getCurrentUploadDir(listener);
+			File uploadDirectory = new File(uploadDir);
+			if(!uploadDirectory.exists()) {
+				listener.getLogger().println("ERROR: upload directory " + uploadDirectory.getAbsolutePath() + " does not exist or is not accessible");
+				return false;
+			}
+			if(!uploadDirectory.isDirectory()) {
+				listener.getLogger().println("ERROR: " + uploadDirectory.getAbsolutePath() + " is not a directory");
+				return false;
+			}
+			String workSpacePath = build.getWorkspace().getRemote();
+			listener.getLogger().println("zipping sources from " + workSpacePath + " to " + uploadDirectory.getAbsolutePath());
 
-		String destfileName = uploadDir + "/" + getSnapshotZipfileName(customerId, projectId, new Date());
-		try {
-			zipSources(workSpacePath, destfileName, listener);
-		} catch (IOException e) {
-			listener.getLogger().println("exception encountered during zip process with message: " + e.getMessage());
+			String destfileName = uploadDir + "/" + getSnapshotZipfileName(customerId, projectId, new Date());
+			try {
+				zipSources(workSpacePath, destfileName, listener);
+			} catch (IOException e) {
+				listener.getLogger().println("exception encountered during zip process with message: " + e.getMessage());
+				e.printStackTrace();
+				return false;
+			}
+			listener.getLogger().println("DONE ... created snapshot " + destfileName);
+
+			//TODO wait for result
+
+			//TODO provide link to monitor server
+
+		} catch (Exception e) {
+			listener.getLogger().println("exception encountered in IJsbergLinkPlugin with message: " + e.getMessage());
 			e.printStackTrace();
 			return false;
 		}
-		listener.getLogger().println("DONE ... created snapshot " + destfileName);
         return true;
     }
+
+	private boolean waitForAnalysisResult(PrintStream logOut, String snapshotId) {
+
+		return true;
+
+	}
+
+
+	private boolean pollAnalysisStatus(PrintStream logOut, String snapshotId) {
+
+		String statusData = HttpIoSupport.getDataByHttp(monitorUrl + "/status_report.jsp");
+		if(statusData != null) {
+			Document document = new Document("StatusReport");
+			try {
+				document.load(statusData);
+			} catch (ParseException pe) {
+
+			}
+			Node statusNode = document.getFirstNodeByNameInTree("Status");
+			if(statusNode != null) {
+				return processingEnded(document);
+			} else {
+				if(statusData.contains("<StatusReport>") || statusData.contains("<StatusReport />")) {
+					logOut.println(new LogEntry(Level.CRITICAL, "failed to obtain status node for " + snapshotId + ": snapshot may not have been picked up", statusData));
+					return false;//instance may not have picked snapshot yet
+				} else {
+					logOut.println(new LogEntry(Level.CRITICAL, "failed to obtain status node for " + snapshotId, statusData));
+//					record.setStatus(AnalysisJobRecord.Status.ABORTED, "failed to obtain status node for " + record + "(will be ABORTED): job must continue to terminate any instances");
+//					customerAdmin.save();
+					return true;
+				}
+			}
+		} else {
+//			record.setStatus(AnalysisJobRecord.Status.ABORTED, "failed to obtain status page for " + record + ": job must proceed to terminate any instances");//TODO plus reason
+//			customerAdmin.save();
+			logOut.println(new LogEntry(Level.CRITICAL, "failed to obtain status page for " + snapshotId + ": job must proceed to terminate any instances"));
+			return true;
+		}
+		//return false;
+
+	}
+
+
+	private boolean processingEnded(Document document) {
+		Node statusNode = document.getFirstNodeByNameInTree("Status");
+		//System.out.println(new LogEntry("remote status of " + record + ": " + statusNode.getContentsWithoutTags()));
+		if(AnalysisJobRecord.Status.FAILED.name().equals(statusNode.getContentsWithoutTags())) {
+//			prepareForNextStep(record, document, AnalysisJobRecord.Status.FAILED);
+			return true;
+		} else if(AnalysisJobRecord.Status.COMPLETED.name().equals(statusNode.getContentsWithoutTags())) {
+//			prepareForNextStep(record, document, AnalysisJobRecord.Status.COMPLETED);
+			return true;
+		} else if(AnalysisJobRecord.Status.ABORTED.name().equals(statusNode.getContentsWithoutTags())) {
+//			prepareForNextStep(record, document, AnalysisJobRecord.Status.ABORTED);
+			return true;
+		}
+		return false;
+	}
+
 
 	private String getCurrentUploadDir(BuildListener listener) {
 		String uploadDir = monitorUploadDirectory;
@@ -148,19 +226,30 @@ public class IJsbergLinkPlugin extends Builder {
 		ZipFileStreamProvider zipFileStreamProvider = new ZipFileStreamProvider(destfileName);
 		List<String> languages = StringSupport.split(properties.getProperty("languages"));
 
-		for(String language : languages) {
-			listener.getLogger().println("zipping sources for language " + language);
-			Properties languageProperties = PropertiesSupport.getSubsection(properties, language);
-			FileFilterRuleSet fileFilterRuleSet = configureFileFilter(PropertiesSupport.getSubsection(languageProperties, "fileFilter"));
-			copyFilesToZip(workSpacePath, zipFileStreamProvider, fileFilterRuleSet);
-			Properties testFileFilterProperties = PropertiesSupport.getSubsection(languageProperties, "testFileFilter");
-			if(testFileFilterProperties != null && !testFileFilterProperties.isEmpty()){
-				FileFilterRuleSet testFileFilterRuleSet = configureFileFilter(testFileFilterProperties);
-				listener.getLogger().println("zipping TEST sources for language " + language);
-				copyFilesToZip(workSpacePath, zipFileStreamProvider, testFileFilterRuleSet);
+		try {
+			for(String language : languages) {
+				listener.getLogger().println("zipping sources for language " + language);
+				Properties languageProperties = PropertiesSupport.getSubsection(properties, language);
+				FileFilterRuleSet fileFilterRuleSet = configureFileFilter(PropertiesSupport.getSubsection(languageProperties, "fileFilter"));
+				copyFilesToZip(workSpacePath, zipFileStreamProvider, fileFilterRuleSet);
+				Properties testFileFilterProperties = PropertiesSupport.getSubsection(languageProperties, "testFileFilter");
+				if(testFileFilterProperties != null && !testFileFilterProperties.isEmpty()){
+					FileFilterRuleSet testFileFilterRuleSet = configureFileFilter(testFileFilterProperties);
+					listener.getLogger().println("zipping TEST sources for language " + language);
+					copyFilesToZip(workSpacePath, zipFileStreamProvider, testFileFilterRuleSet);
+				}
 			}
+		} catch (IOException ioe) {
+			try {
+				zipFileStreamProvider.close();
+			} catch (Exception e) {
+				listener.getLogger().println("unable to close zip file with message: " + e.getMessage());
+				e.printStackTrace();
+			}
+			throw ioe;
 		}
 		zipFileStreamProvider.close();
+		//notify monitor
 		FileSupport.createFile(destfileName + ".DONE");
 	}
 
