@@ -14,4 +14,7 @@
   <f:entry title="Monitor upload directory" field="monitorUploadDirectory" description="Path to upload directory of monitor server">
     <f:textbox />
   </f:entry>
+  <f:entry title="Monitor upload directory" field="monitorDownloadDirectory" description="Path to download directory of monitor server">
+    <f:textbox />
+  </f:entry>
 </j:jelly>

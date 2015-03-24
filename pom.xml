@@ -38,6 +38,13 @@
             <artifactId>iglu-http</artifactId>
             <version>0.9.3-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.ijsberg</groupId>
+            <artifactId>analysis-infrastructure-common</artifactId>
+            <version>1.0</version>
+        </dependency>
+
     </dependencies>
 
   <licenses>
