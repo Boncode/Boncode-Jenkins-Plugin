@@ -59,7 +59,7 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 
 
 	private final String analysisProperties;
-	private final Properties properties = new Properties();
+//	private final Properties properties = new Properties();
 
 	public static final String SNAPSHOT_TIMESTAMP_FORMAT = "yyyyMMdd_HH_mm";
 
@@ -106,8 +106,8 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 		logStream = listener.getLogger();
 
 		//String uploadDir = getCurrentUploadDir(listener);
-
-		new BuildServerToMonitorLink(analysisProperties, monitorUploadDirectory, monitorDownloadDirectory, this).perform(build.getWorkspace().getRemote());
+		Properties properties1 = PropertiesSupport.loadProperties(analysisProperties);
+		new BuildServerToMonitorLink(properties1, monitorUploadDirectory, monitorDownloadDirectory, this).perform(build.getWorkspace().getRemote());
 
 		logStream = System.out;
 
