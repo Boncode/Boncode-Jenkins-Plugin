@@ -105,23 +105,15 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 
 		logStream = listener.getLogger();
 
-		//String uploadDir = getCurrentUploadDir(listener);
 		Properties properties1 = PropertiesSupport.loadProperties(analysisProperties);
+
+		//build.getWorkspace().getRemote() gets the working directory: make sure that build is restricted to "master"
 		new BuildServerToMonitorLink(properties1, monitorUploadDirectory, monitorDownloadDirectory, this).perform(build.getWorkspace().getRemote());
 
 		logStream = System.out;
 
 		return true;
 	}
-
-/*	private String getCurrentUploadDir(BuildListener listener) {
-		String uploadDir = monitorUploadDirectory;
-/ *		if (getDescriptor().getAlternativeUploadDirectory() != null && !"".equals(getDescriptor().getAlternativeUploadDirectory())) {
-			uploadDir = getDescriptor().getAlternativeUploadDirectory();
-		} * /
-		listener.getLogger().println("got request to analyze project " + projectId + " for " + customerId);
-		return uploadDir;
-	}*/
 
 
 	// Overridden for better type safety.
@@ -233,10 +225,10 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
 			// To persist global configuration information,
 			// set that to properties and call save().
-			alterantiveUploadDirectory = formData.getString("alternativeUploadDirectory");
+			//alterantiveUploadDirectory = formData.getString("alternativeUploadDirectory");
 			// ^Can also use req.bindJSON(this, formData);
 			//  (easier when there are many fields; need set* methods for this, like setUseFrench)
-			save();
+			//save();
 			return super.configure(req,formData);
 		}
 
