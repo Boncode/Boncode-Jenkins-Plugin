@@ -11,7 +11,7 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:section title="IJsberg Static Code Analysis">
+  <f:section title="Boncode Static Code Analysis">
     <f:entry title="Alternative upload directory" field="alterantiveUploadDirectory"
       description="Provide an alternative upload directory for the monitor server">
       <f:checkbox />

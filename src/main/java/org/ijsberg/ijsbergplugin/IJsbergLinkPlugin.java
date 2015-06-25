@@ -66,7 +66,7 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 
 	@DataBoundConstructor
-	public IJsbergLinkPlugin(String analysisProperties, String monitorUploadDirectory, String monitorDownloadDirectory) throws IOException {
+	public IJsbergLinkPlugin(String analysisProperties, String monitorUploadDirectory, String monitorDownloadDirectory, boolean waitForAnalysisCompletion) throws IOException {
 
 		this.monitorUploadDirectory = monitorUploadDirectory;
 		this.analysisProperties = analysisProperties;
@@ -78,14 +78,6 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 	/**
 	 * We'll use this from the <tt>config.jelly</tt>.
 	 */
-/*	public String getCustomerId() {
-		return customerId;
-	}
-
-	public String getProjectId() {
-		return projectId;
-	} */
-
 	public String getMonitorUploadDirectory() {
 		return monitorUploadDirectory;
 	}
