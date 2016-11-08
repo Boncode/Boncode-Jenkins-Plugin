@@ -17,7 +17,7 @@
   <f:entry title="Monitor download directory" field="monitorDownloadDirectory" description="Path to download directory of monitor server">
     <f:textbox />
   </f:entry>
-  <f:entry title="Wait for anlysis completion" field="waitForAnalysisCompletion" description="Lets the build process wait for analysis completion">
+  <f:entry title="Wait for analysis completion" field="waitForAnalysisCompletion" description="Lets the build process wait for analysis completion">
       <f:checkbox />
   </f:entry>
 </j:jelly>
