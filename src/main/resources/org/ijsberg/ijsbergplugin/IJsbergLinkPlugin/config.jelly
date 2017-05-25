@@ -20,4 +20,7 @@
   <f:entry title="Wait for analysis completion" field="waitForAnalysisCompletion" description="Lets the build process wait for analysis completion">
       <f:checkbox />
   </f:entry>
+  <f:entry title="Enable partial analysis" field="enablePartialAnalysis" description="Instructs the monitor server to assess changed and added files only">
+      <f:checkbox />
+  </f:entry>
 </j:jelly>

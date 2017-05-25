@@ -56,21 +56,20 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 
 	private final String monitorUploadDirectory;
 	private final String monitorDownloadDirectory;
-
-
 	private final String analysisProperties;
-//	private final Properties properties = new Properties();
+	private final boolean enablePartialAnalysis;
 
 	public static final String SNAPSHOT_TIMESTAMP_FORMAT = "yyyyMMdd_HH_mm";
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 
 	@DataBoundConstructor
-	public IJsbergLinkPlugin(String analysisProperties, String monitorUploadDirectory, String monitorDownloadDirectory, boolean waitForAnalysisCompletion) throws IOException {
+	public IJsbergLinkPlugin(String analysisProperties, String monitorUploadDirectory, String monitorDownloadDirectory, boolean waitForAnalysisCompletion, boolean enablePartialAnalysis) throws IOException {
 
 		this.monitorUploadDirectory = monitorUploadDirectory;
 		this.analysisProperties = analysisProperties;
 		this.monitorDownloadDirectory = monitorDownloadDirectory;
+		this.enablePartialAnalysis = enablePartialAnalysis;
 		BuildServerToMonitorLink.throwIfPropertiesNotOk(analysisProperties, monitorUploadDirectory, monitorDownloadDirectory);
 	}
 
@@ -97,10 +96,11 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 
 		logStream = listener.getLogger();
 
-		Properties properties1 = PropertiesSupport.loadProperties(analysisProperties);
+		Properties properties = PropertiesSupport.loadProperties(analysisProperties);
+		properties.setProperty("enablePartialAnalysis", "" + enablePartialAnalysis);
 
 		//build.getWorkspace().getRemote() gets the working directory: make sure that build is restricted to "master"
-		new BuildServerToMonitorLink(properties1, monitorUploadDirectory, monitorDownloadDirectory, this).perform(build.getWorkspace().getRemote());
+		new BuildServerToMonitorLink(properties, monitorUploadDirectory, monitorDownloadDirectory, this).perform(build.getWorkspace().getRemote());
 
 		logStream = System.out;
 
