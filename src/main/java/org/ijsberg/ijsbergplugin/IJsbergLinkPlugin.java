@@ -11,29 +11,15 @@ import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import nl.ijsberg.analysis.server.buildserver.BuildServerToMonitorLink;
 import nl.ijsberg.analysis.server.buildserver.ValidationResult;
-import org.ijsberg.iglu.logging.Level;
 import org.ijsberg.iglu.logging.LogEntry;
 import org.ijsberg.iglu.logging.Logger;
-import org.ijsberg.iglu.util.collection.ArraySupport;
-import org.ijsberg.iglu.util.http.HttpIoSupport;
-import org.ijsberg.iglu.util.io.FSFileCollection;
-import org.ijsberg.iglu.util.io.FileFilterRuleSet;
-import org.ijsberg.iglu.util.io.FileSupport;
-import org.ijsberg.iglu.util.io.ZipFileStreamProvider;
-import org.ijsberg.iglu.util.misc.StringSupport;
-import org.ijsberg.iglu.util.properties.PropertiesSupport;
-import org.ijsberg.iglu.util.xml.Document;
-import org.ijsberg.iglu.util.xml.Node;
-import org.ijsberg.iglu.util.xml.ParseException;
+import org.ijsberg.iglu.util.properties.IgluProperties;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -96,7 +82,7 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 
 		logStream = listener.getLogger();
 
-		Properties properties = PropertiesSupport.loadProperties(analysisProperties);
+		Properties properties = IgluProperties.loadProperties(analysisProperties);
 		properties.setProperty("enablePartialAnalysis", "" + enablePartialAnalysis);
 
 		//build.getWorkspace().getRemote() gets the working directory: make sure that build is restricted to "master"
