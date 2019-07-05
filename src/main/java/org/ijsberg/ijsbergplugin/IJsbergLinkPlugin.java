@@ -106,11 +106,7 @@ public class IJsbergLinkPlugin extends Builder implements Logger {
 		logStream.println(entry);
 	}
 
-	public String getStatus() {
-		return null;
-	}
-
-	public void addAppender(Logger appender) {
+    public void addAppender(Logger appender) {
 	}
 
 	public void removeAppender(Logger appender) {
